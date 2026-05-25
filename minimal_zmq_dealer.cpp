@@ -53,7 +53,14 @@ int main(int argc, const char** argv){
 	keepgoing=true;
 	std::cout<<"waiting for connection."<<std::endl;
 	while(keepgoing){
-		int ok = zmq::poll(&outpoll,1,100); // poll for 100ms for a connection
+		int ok=-1;
+		try{
+			ok = zmq::poll(&outpoll, 1, 100);  // poll for 100ms for a connection
+		} catch(zmq::error_t& err){
+			// ignore poll aborting due to signals
+			if(zmq_errno()==EINTR) continue;
+			throw;
+		}
 		//std::cout<<"zmq::poll returned: "<<ok<<std::endl;
 		if(ok<0){
 			std::cerr<<"Polling error "<<zmq_strerror(errno)<<std::endl;
@@ -80,6 +87,7 @@ int main(int argc, const char** argv){
 			try {
 				ok = zmq::poll(&outpoll,1,500);
 			} catch(zmq::error_t& err){
+				if(zmq_errno()==EINTR) continue;
 				std::cerr<<"poll caught "<<err.what()<<std::endl;
 				ok = -1;
 			}
@@ -109,6 +117,7 @@ int main(int argc, const char** argv){
 		try {
 			ok = zmq::poll(&inpoll,1,500);
 		} catch(zmq::error_t& err){
+			if(zmq_errno()==EINTR) continue;
 			std::cerr<<"poll caught "<<err.what()<<std::endl;
 			ok=-1;
 		}
